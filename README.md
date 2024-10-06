@@ -29,11 +29,19 @@ JWT_SECRET=your-jwt-secret
 JWT_EXPIRES_IN=60
 ```
 
-#### Run the Application
-To start the server, use the command:
+## Run the Application
+
+#### Development Mode
+In development mode, detailed error messages and stack traces are shown in the console.
 ```bash
 npm start
 ```
+#### Production Mode 
+In production mode, error messages are more concise and focused on security, hiding stack traces and sensitive information.
+```bash
+npm run start:prod
+```
+
 
 
 
