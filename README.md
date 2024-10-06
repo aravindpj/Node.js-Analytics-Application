@@ -49,7 +49,7 @@ npm run start:prod
 
 ## API Documentation
 
-For detailed API documentation and examples of requests, please refer to our Postman collection:
+For detailed API documentation and examples of requests, please refer to my Postman collection:
 
 [API Documentation on Posman](https://documenter.getpostman.com/view/22641994/2sAXqmBQtS)
 
