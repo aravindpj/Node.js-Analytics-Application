@@ -13,7 +13,11 @@ mongoose
   .connect(db, {
     useNewUrlParser: true,
   })
-  .then(() => console.log(`DATABASE CONNECTED. PLEASE WAIT A MOMENT WHILE THE DATA IS BEING UPLOADED`));
+  .then(() =>
+    console.log(
+      `DATABASE CONNECTED. PLEASE WAIT A MOMENT WHILE THE DATA IS BEING UPLOADED`
+    )
+  );
 
 const deviceId = "device123";
 const getRandomInt = (min, max) =>
@@ -31,14 +35,15 @@ const upload = async () => {
     console.log("ERROR WHILE UPLOADING");
   }
 };
-const writFile= async(path,data)=>await fs.writeFile(path,JSON.stringify(data,null,2))
+const writFile = async (path, data) =>
+  await fs.writeFile(path, JSON.stringify(data, null, 2));
 
 async function generateUptimeData(durationInDays) {
   let uptimeData = [];
   let analyticsData = [];
   let currentTime = Date.now();
   let previousState = null;
-
+  let previousAnalyticValue = null;
   for (let day = 0; day < durationInDays; day++) {
     for (let hour = 0; hour < 12; hour++) {
       const numTriggers = getRandomInt(5, 10);
@@ -49,7 +54,8 @@ async function generateUptimeData(durationInDays) {
         const analyticValue = getRandomInt(0, 1);
 
         if (currentState === previousState) continue;
-
+        
+        if (analyticValue === previousAnalyticValue) continue;
         const uptimeRecord = {
           timeStamp: new Date(currentTime),
           metaData: {
@@ -70,9 +76,10 @@ async function generateUptimeData(durationInDays) {
         analyticsData.push(analyticRecord);
         uptimeData.push(uptimeRecord);
         previousState = currentState;
+        previousAnalyticValue = analyticValue;
         currentTime += 60000;
       }
-      // skip to next hour 
+      // skip to next hour
       currentTime += 3600000; // 1 hour in milliseconds
     }
 

@@ -16,7 +16,7 @@ exports.dataAnalytics = catchAsync(async function (req, res, next) {
       $match: {
         timeStamp: {
           $gte: startDate,
-          $lte: endDate,
+          $lt: endDate,
         },
       },
     },
@@ -38,7 +38,7 @@ exports.dataAnalytics = catchAsync(async function (req, res, next) {
     dayByHour[hourData._id] = hourData.totalDataCount;
   });
   const totalCount = dayByHour.reduce((acc, count) => acc + count, 0);
-  console.log(totalCount)
+  console.log(totalCount);
   const avgPerHour = totalCount / 24;
   const busiestHour = dayByHour.indexOf(Math.max(...dayByHour));
 
@@ -54,116 +54,117 @@ exports.dataAnalytics = catchAsync(async function (req, res, next) {
 });
 
 exports.report = catchAsync(async function (req, res, next) {
+  if (!req.query.date) {
+    return next(new AppError("Date query parameter is required.", 400)); 
+  }
 
-    const date = new Date(formatDate(req.query.date) || Date.now());
-    const startDate = new Date(date.setHours(0, 0, 0, 0)); 
+  const date = new Date(formatDate(req.query.date));
+  const startDate = new Date(date.setHours(0, 0, 0, 0));
 
-    const result = await Analytics.aggregate([
-      {
-        $match: {
-          timeStamp: {
-            $lte: startDate,
+  const result = await Analytics.aggregate([
+    {
+      $match: {
+        timeStamp: {
+          $lte: startDate,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          day: { $dayOfMonth: "$timeStamp" },
+          month: { $month: "$timeStamp" },
+          year: { $year: "$timeStamp" },
+        },
+        totalData: { $sum: 1 },
+        totalOnes: {
+          $sum: {
+            $cond: [{ $eq: ["$metaData.data", 1] }, 1, 0],
           },
         },
       },
-      {
-        $group: {
-          _id: {
-            day: { $dayOfMonth: "$timeStamp" },
-            month: { $month: "$timeStamp" }, 
-            year: { $year: "$timeStamp" }, 
-          },
-          totalData: { $sum: 1 }, 
-         totalOnes: {
-            $sum: {
-              $cond: [{ $eq: ["$metaData.data", 1] }, 1, 0],
-            },
-          }
-        },
-      },
-      {
-        $project: {
-            date:"$_id",
-            totalData: 1,
+    },
+    {
+      $project: {
+        date: "$_id",
+        totalData: 1,
 
-            // divide totalOnes and totalData to get avg
-            avgData: {
-                $cond: [
-                    { $ne: ["$totalData", 0] }, 
-                    { $round: [{ $divide: ["$totalOnes", "$totalData"] }, 2] },
-                    0,
-                ],
-            },
-            _id: 0,
+        // divide totalOnes and totalData to get avg
+        avgData: {
+          $cond: [
+            { $ne: ["$totalData", 0] },
+            { $round: [{ $divide: ["$totalOnes", "$totalData"] }, 2] },
+            0,
+          ],
         },
+        _id: 0,
       },
-      {
-        $sort: { "date.year": 1, "date.month": 1, "date.day": 1 },
-      },
-    ]);
+    },
+    {
+      $sort: { "date.year": 1, "date.month": 1, "date.day": 1 },
+    },
+  ]);
 
-  res.json({ status: "success" ,result});
+  res.json({ status: "success", result });
 });
 
 exports.busiestAndQuietest = catchAsync(async function (req, res, next) {
-    const { date } = req.query;
-  
-    if (!date) {
-      return next(new AppError('Please provide a valid date in the payload',400));
-    }
-  
-    const providedDate = new Date(formatDate(date));
-  
-    const result = await Analytics.aggregate([
-      {
-        $match: {
-          timeStamp: { $lt: providedDate }
-        }
-      },
-      {
-        $project: {
-          day: { $dateToString: { format: "%Y-%m-%d", date: "$timeStamp" } },
-          data: "$metaData.data"
-        }
-      },
-      {
-        $group: {
-          _id: "$day",
-          totalData: { $sum: "$data" } 
-        }
-      },
-      {
-        $sort: { totalData: -1 }
-      },
-      {
-        $facet: {
-          busiestDays: [{ $limit: 3 }],
-          allSortedDays: [{ $sort: { totalData: 1 } }] 
-        }
-      },
-      {
-      
-        $project: {
-          busiestDays: 1,
-          quietestDays: { $slice: ["$allSortedDays", 3] } 
-        }
-      }
-    ]);
-  
-    if (!result || result.length === 0) {
-      return next(new AppError("No data found",404));
-    }
-  
-    const { busiestDays, quietestDays } = result[0];
-  
-    
-    res.status(200).json({
-      status: 'success',
-      result: {
-        busiestDays,
-        quietestDays
-      }
-    });
-  });
+  const { date } = req.query;
 
- 
+  if (!date) {
+    return next(
+      new AppError("Please provide a valid date in the payload", 400)
+    );
+  }
+
+  const providedDate = new Date(formatDate(date));
+
+  const result = await Analytics.aggregate([
+    {
+      $match: {
+        timeStamp: { $lt: providedDate },
+      },
+    },
+    {
+      $project: {
+        day: { $dateToString: { format: "%Y-%m-%d", date: "$timeStamp" } },
+        data: "$metaData.data",
+      },
+    },
+    {
+      $group: {
+        _id: "$day",
+        totalData: { $sum: "$data" },
+      },
+    },
+    {
+      $sort: { totalData: -1 },
+    },
+    {
+      $facet: {
+        busiestDays: [{ $limit: 3 }],
+        allSortedDays: [{ $sort: { totalData: 1 } }],
+      },
+    },
+    {
+      $project: {
+        busiestDays: 1,
+        quietestDays: { $slice: ["$allSortedDays", 3] },
+      },
+    },
+  ]);
+
+  if (!result || result.length === 0) {
+    return next(new AppError("No data found", 404));
+  }
+
+  const { busiestDays, quietestDays } = result[0];
+
+  res.status(200).json({
+    status: "success",
+    result: {
+      busiestDays,
+      quietestDays,
+    },
+  });
+});
