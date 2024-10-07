@@ -51,7 +51,7 @@ exports.dataAnalytics = catchAsync(async function (req, res, next) {
     result: {
       dayByHour,
       net: totalCount,
-      avg: avgPerHour.toFixed(2),
+      avg: +avgPerHour.toFixed(2),
       busiestHour,
     },
   });
