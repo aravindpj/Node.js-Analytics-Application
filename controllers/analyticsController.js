@@ -6,11 +6,15 @@ const formatDate = require("../utils/dateFormat");
 
 exports.dataAnalytics = catchAsync(async function (req, res, next) {
   const date = new Date(formatDate(req.query.date) || Date.now());
-  const startDate = new Date(date.setHours(0, 0, 0, 0));
-  const endDate = new Date(date.setHours(23, 59, 59, 999));
-  console.log("Start Date:", startDate);
-  console.log("End Date:", endDate);
 
+  const startDate = new Date(date);
+  startDate.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(date);
+  endDate.setHours(23, 59, 59, 999);
+  
+  console.log("Start Date:", startDate.toLocaleString()); 
+  console.log("End Date:", endDate.toLocaleString());
   const result = await Analytics.aggregate([
     {
       $match: {
@@ -58,8 +62,8 @@ exports.report = catchAsync(async function (req, res, next) {
     return next(new AppError("Date query parameter is required.", 400)); 
   }
 
-  const date = new Date(formatDate(req.query.date));
-  const startDate = new Date(date.setHours(0, 0, 0, 0));
+  const startDate = new Date(formatDate(req.query.date));
+  startDate.setHours(23, 59, 59, 999);
 
   const result = await Analytics.aggregate([
     {
@@ -118,7 +122,7 @@ exports.busiestAndQuietest = catchAsync(async function (req, res, next) {
   }
 
   const providedDate = new Date(formatDate(date));
-
+  providedDate.setHours(23, 59, 59, 999)
   const result = await Analytics.aggregate([
     {
       $match: {

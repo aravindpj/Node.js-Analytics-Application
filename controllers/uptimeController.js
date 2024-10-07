@@ -9,11 +9,16 @@ exports.uptimeData = catchAsync(async function (req, res, next) {
   if (!req.query.date) {
     return next(new AppError("Date query parameter is required.", 400)); 
   }
-    const date = new Date(formatDate(req.query.date));
-    const startDate = new Date(date.setHours(0, 0, 0, 0)); // Start of the day
-    const endDate = new Date(date.setHours(23, 59, 59, 999)); 
-    console.log(startDate)
-    console.log(endDate)
+  const date = new Date(formatDate(req.query.date) || Date.now());
+
+  const startDate = new Date(date);
+  startDate.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(date);
+  endDate.setHours(23, 59, 59, 999);
+  
+  console.log("Start Date:", startDate.toLocaleString()); 
+  console.log("End Date:", endDate.toLocaleString());
 
     const result = await UptimeData.aggregate([
         {
@@ -60,6 +65,7 @@ exports.uptimeTotal = catchAsync(async function (req, res, next) {
       return next(new AppError('Please provide a valid date in the payload',400));
     }
     const providedDate = new Date(formatDate(date));
+    providedDate.setHours(23, 59, 59, 999)
     const result = await UptimeData.aggregate([
         {
           $match: {
