@@ -81,7 +81,10 @@ exports.uptimeTotal = catchAsync(async function (req, res, next) {
           },
         },
       ]);
-  
+
+      if(!result.length){
+        return next(new AppError("There is no data found please check your input",404))
+      }
 
       const connectedCount = result.find(item => item.state === 'connected')?.count || 0;
       const disconnectedCount = result.find(item => item.state === 'disconnected')?.count || 0;
